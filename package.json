@@ -6,11 +6,13 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "anvil": "anvil --load-state tsender-deployed.json"
   },
   "dependencies": {
     "@rainbow-me/rainbowkit": "^2.2.4",
     "@tanstack/react-query": "^5.75.7",
+    "@wagmi/core": "^2.17.1",
     "next": "15.3.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

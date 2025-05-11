@@ -2,9 +2,9 @@
 import { useState, useMemo } from "react";
 import InputForm from "./ui/InputField"; // Adjust path if needed
 import { chainsToTSender, tsenderAbi, erc20Abi } from "@/constants";
-import {useChainId, useConfig, useAccount} from "wagmi";
-import {readContract} from "@wagmi/core";
-import { calculateTotals } from "@/utils/calculateTotals";
+import {useChainId, useConfig, useAccount, useWriteContract} from "wagmi";
+import {readContract, waitForTransactionReceipt} from "@wagmi/core";
+import { calculateTotals } from "@/utils/calculateTotals/calculateTotals";
 
 export  function AirdropForm() {
     const [tokenAddress, setTokenAddress] = useState<string>("");
@@ -16,6 +16,7 @@ export  function AirdropForm() {
     const config = useConfig();
     const account = useAccount();
     const total: number = useMemo(() => calculateTotals(amounts) , [amounts]);
+    const {data: hash, isPending, writeContractAsync} = useWriteContract()
 
 
 
@@ -51,9 +52,31 @@ export  function AirdropForm() {
         console.log("approved amount", approvedAmount);
         console.log("total amount", total);
         if (approvedAmount < total ) {
-            alert("Please approve the token transfer for the contract");
-            return;
+            const approvelHash = await writeContractAsync({
+              abi: erc20Abi,
+              address: tokenAddress as `0x${string}`,
+              functionName: "approve",
+              args: [tSenderAddress as `0x${string}`, BigInt(total)],
+              gas: BigInt(1000000),
+            });
+            console.log("approvelHash", approvelHash);
+            const approvalReceipt = await waitForTransactionReceipt(config, { hash: approvelHash});
+            console.log("approvalReceipt", approvalReceipt);
+
         }
+        
+        // Call the airdrop function on the contract
+        const airdropHash = await writeContractAsync({
+            abi: tsenderAbi,
+            address: tSenderAddress as `0x${string}`,
+            functionName: "airdropERC20",
+            args: [tokenAddress as `0x${string}`, recipients, amounts, total],
+            gas: BigInt(1000000),
+        });
+        console.log("airdropHash", airdropHash);
+        const airdropReceipt = await waitForTransactionReceipt(config, { hash: airdropHash});
+        console.log("airdropReceipt", airdropReceipt);
+        
     }
   
     return (
